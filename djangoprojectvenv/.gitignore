@@ -120,6 +120,9 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
+#static files
+static/
+/static_cdn
 # mkdocs documentation
 /site
 
