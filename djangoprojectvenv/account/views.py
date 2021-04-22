@@ -5,6 +5,18 @@ from django.conf import settings
 from .forms import RegistrationForm, AccountAuthenticationForm
 # Create your views here.
 
+# This is basically almost exactly the same as friends/friend_list_view
+def account_search_view(request, *args, **kwargs):
+	context = {}
+	if request.method == "GET":
+		search_query = request.GET.get("q")
+		if len(search_query) > 0:
+			search_results = Account.objects.filter(email__icontains=search_query).filter(username__icontains=search_query).distinct()
+			accounts = [] # [(account1, True), (account2, False), ...]
+				for account in search_results:
+					accounts.append((account, False)))
+				context['accounts'] = accounts
+
 
 def register_view(request, *args, **kwargs):
 	user = request.user
@@ -107,6 +119,3 @@ def account_view(request, *args, **kwargs):
 		context['BASE_URL'] = setttings.BASE_URL
 
 		return render(request, "account/account.html, context)
-
-
-		
