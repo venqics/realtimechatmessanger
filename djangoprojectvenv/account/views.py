@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth import login, authenticate
 from django.conf import settings
 from .forms import RegistrationForm, AccountAuthenticationForm, AccountUpdateForm
-
+from .models import Account
 from django.core.files.storage import default_storage
 from django.core.files.storage import FileSystemStorage
 import os
@@ -25,9 +25,9 @@ def account_search_view(request, *args, **kwargs):
 		if len(search_query) > 0:
 			search_results = Account.objects.filter(email__icontains=search_query).filter(username__icontains=search_query).distinct()
 			accounts = [] # [(account1, True), (account2, False), ...]
-				for account in search_results:
-					accounts.append((account, False)))
-				context['accounts'] = accounts
+			for account in search_results:
+				accounts.append((account, False))
+			context['accounts'] = accounts
 
 
 def register_view(request, *args, **kwargs):
@@ -128,9 +128,33 @@ def account_view(request, *args, **kwargs):
 
 		context['is_self'] = is_self
 		context['is_friend'] = is_friend
-		context['BASE_URL'] = setttings.BASE_URL
+		context['BASE_URL'] = settings.BASE_URL
 
-		return render(request, "account/account.html, context)
+		return render(request, "account/account.html", context)
+
+def save_temp_profile_image_from_base64String(imageString, user):
+	INCORRECT_PADDING_EXCEPTION = "Incorrect padding"
+	try:
+		if not os.path.exists(settings.TEMP):
+			os.mkdir(settings.TEMP)
+		if not os.path.exists(settings.TEMP + "/" + str(user.pk)):
+			os.mkdir(settings.TEMP + "/" + str(user.pk))
+		url = os.path.join(settings.TEMP + "/" + str(user.pk),TEMP_PROFILE_IMAGE_NAME)
+		storage = FileSystemStorage(location=url)
+		image = base64.b64decode(imageString)
+		with storage.open('', 'wb+') as destination:
+			destination.write(image)
+			destination.close()
+		return url
+	except Exception as e:
+		print("exception: " + str(e))
+		# workaround for an issue I found
+		if str(e) == INCORRECT_PADDING_EXCEPTION:
+			imageString += "=" * ((4 - len(imageString) % 4) % 4)
+			return save_temp_profile_image_from_base64String(imageString, user)
+	return None
+
+
 
 def crop_image(request, *args, **kwargs):
 	payload = {}

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     #My apps
     'core',
     'account',
+    'friend',
 
     #Third party apps
     'django.contrib.admin',

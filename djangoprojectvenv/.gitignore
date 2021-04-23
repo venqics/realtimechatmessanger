@@ -130,6 +130,7 @@ static/
 
 #Database files
 account/migrations
+friend/migrations
 
 #Settings
 

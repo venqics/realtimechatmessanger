@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
-from account.views import register_view, login_view, logout_view
+from account.views import register_view, login_view, account_search_view
 from django.contrib.auth import views as auth_views
 
 
@@ -25,7 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('account/', include('account.urls', namespace='account')),
     path('register/', register_view, name="register"),
-    path('logout/', logout_view, name = 'logout'),
+
     path('login/', login_view, name = 'login'),
     path('search/', account_search_view, name="search"),
 
