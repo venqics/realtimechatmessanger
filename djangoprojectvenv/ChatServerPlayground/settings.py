@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'account',
     'friend',
     'public_chat',
+    'channels',
 
     #Third party apps
     'django.contrib.admin',
@@ -85,6 +86,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ChatServerPlayground.wsgi.application'
 
+ASGI_APPLICATION = "ChatServerPlayground.routing.application"
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
