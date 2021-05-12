@@ -30,7 +30,8 @@ ALLOWED_HOSTS = []
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # During development only
 
-AUTH_USER_MODEL = "account.Account"
+AUTH_USER_MODEL = 'account.Account'
+
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.AllowAllUsersModelBackend',
     'account.backends.CaseInsensitiveModelBackend',
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     'core',
     'account',
     'friend',
+    'public_chat',
 
     #Third party apps
     'django.contrib.admin',

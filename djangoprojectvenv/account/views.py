@@ -12,9 +12,9 @@ import json
 import base64
 import requests
 from django.core import files
-from .models import FriendList, FriendRequest
-from friend.friend_request_status import FriendRequestStatus
-from friend.utils import get_friend_request_or_false
+from djangoprojectvenv.friend.models import FriendList, FriendRequest
+from djangoprojectvenv.friend.friend_request_status import FriendRequestStatus
+from djangoprojectvenv.friend.utils import get_friend_request_or_false
 # Create your views here.
 
 TEMP_PROFILE_IMAGE_NAME = "temp_profile_image.png"
