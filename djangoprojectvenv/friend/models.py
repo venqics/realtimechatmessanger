@@ -3,11 +3,12 @@ from django.conf import settings
 from django.utils import timezone
 # Create your models here.
 
+from chat.utils import find_or_create_private_chat
 
 class FriendList(models.Model):
 
-	user 	      = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user")
-	friends       = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="friends")
+	user 	   = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user")
+	friends    = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="friends")
 
 	# set up the reverse relation to GenericForeignKey
     
@@ -17,12 +18,18 @@ class FriendList(models.Model):
 
 
 	def add_friend(self, account):
-	    """
+		"""
 	    Add a new friend.
 	    """
-	    if not account in self.friends.all():
-		    self.friends.add(account)
-		    self.save()
+		if not account in self.friends.all():
+			self.friends.add(account)
+			self.save()
+			
+			chat = find_or_create_private_chat(self.user, account)
+			if not chat.is_active:
+				chat.is_active = True
+				chat.save()	
+			
 
 
 	def remove_friend(self, account):
@@ -31,6 +38,11 @@ class FriendList(models.Model):
 		"""
 		if account in self.friends.all():
 			self.friends.remove(account)
+
+			chat = find_or_create_private_chat(self.user, account)
+			if not chat.is_active:
+				chat.is_active = True
+				chat.save()
 
 	def unfriend(self, removee):
 		"""
