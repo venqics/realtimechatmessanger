@@ -4,13 +4,13 @@ import json
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
-from djangoprojectvenv.public_chat.constants import *
+from public_chat.constants import *
 
 from django.contrib.humanize.templatetags.humanize import naturaltime, naturalday
 from django.utils import timezone
 from datetime import datetime
 from chat.utils import calculate_timestamp
-from djangoprojectvenv.public_chat.models import PublicChatRoom, PublicRoomChatMessage
+from public_chat.models import PublicChatRoom, PublicRoomChatMessage
 
 User = get_user_model()
 

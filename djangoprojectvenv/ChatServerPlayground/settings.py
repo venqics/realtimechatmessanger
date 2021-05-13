@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'public_chat',
     'channels',
     'django.contrib.humanize',
+    'chat',
 
     #Third party apps
     'django.contrib.admin',

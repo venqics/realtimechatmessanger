@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.core.cache import cache
 from django.db import models
 
-from djangoprojectvenv.public_chat.models import PublicChatRoom, PublicRoomChatMessage
+from public_chat.models import PublicChatRoom, PublicRoomChatMessage
 
 class PublicChatRoomAdmin(admin.ModelAdmin):
     list_display = ['id','title', ]
