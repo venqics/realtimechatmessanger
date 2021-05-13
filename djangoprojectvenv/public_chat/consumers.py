@@ -220,6 +220,19 @@ class PublicChatConsumer(AsyncJsonWebsocketConsumer):
 			},
 		)	
 
+	async def display_progress_bar(self, is_displayed):
+		"""
+		1. is_displayed = True
+		- Display the progress bar on UI
+		2. is_displayed = False
+		- Hide the progress bar on UI
+		"""
+		print("DISPLAY PROGRESS BAR: " + str(is_displayed))
+		await self.send_json(
+			{
+				"display_progress_bar": is_displayed
+			}
+		)
 def is_authenticated(user):
 	if user.is_authenticated:
 		return True
