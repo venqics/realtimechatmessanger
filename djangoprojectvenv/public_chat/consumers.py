@@ -7,7 +7,7 @@ from django.contrib.humanize.templatetags.humanize import naturaltime, naturalda
 from django.utils import timezone
 from datetime import datetime
 from chat.utils import calculate_timestamp
-from djangoprojectvenv.public_chat.models import PublicChatRoom
+from djangoprojectvenv.public_chat.models import PublicChatRoom, PublicRoomChatMessage
 
 User = get_user_model()
 
@@ -81,6 +81,34 @@ class PublicChatConsumer(AsyncJsonWebsocketConsumer):
 			await self.display_progress_bar(False)
 			await self.handle_client_error(e)
 
+	async def send_room(self, room_id, message):
+		"""
+		Called by receive_json when someone sends a message to a room.
+		"""
+		# Check they are in this room
+		print("PublicChatConsumer: send_room")
+		if self.room_id != None:
+			if str(room_id) != str(self.room_id):
+				raise ClientError("ROOM_ACCESS_DENIED", "Room access denied")
+			if not is_authenticated(self.scope["user"]):
+				raise ClientError("AUTH_ERROR", "You must be authenticated to chat.")
+		else:
+			raise ClientError("ROOM_ACCESS_DENIED", "Room access denied")
+
+		# Get the room and send to the group about it
+		room = await get_room_or_error(room_id)
+		await create_public_room_chat_message(room, self.scope["user"], message)
+
+		await self.channel_layer.group_send(
+			room.group_name,
+			{
+				"type": "chat.message",
+				"profile_image": self.scope["user"].profile_image.url,
+				"username": self.scope["user"].username,
+				"user_id": self.scope["user"].id,
+				"message": message,
+			}
+		)
 
 	async def chat_message(self, event):
 		"""
@@ -129,15 +157,6 @@ class PublicChatConsumer(AsyncJsonWebsocketConsumer):
 			"join": str(room.id)
 		})
 
-		# send the new user count to the room
-		num_connected_users = get_num_connected_users(room)
-		await self.channel_layer.group_send(
-			room.group_name,
-			{
-				"type": "connected.user.count",
-				"connected_user_count": num_connected_users,
-			}
-		)
 
 
 	async def leave_room(self, room_id):
@@ -160,15 +179,6 @@ class PublicChatConsumer(AsyncJsonWebsocketConsumer):
 			self.channel_name,
 		)
 
-		# send the new user count to the room
-		num_connected_users = get_num_connected_users(room)
-		await self.channel_layer.group_send(
-		room.group_name,
-			{
-				"type": "connected.user.count",
-				"connected_user_count": num_connected_users,
-			}
-		)
 
 	async def handle_client_error(self, e):
 		"""
@@ -183,15 +193,14 @@ class PublicChatConsumer(AsyncJsonWebsocketConsumer):
 		return
 
 	
-
-	
-
-
-
 def is_authenticated(user):
 	if user.is_authenticated:
 		return True
 	return False
+
+@database_sync_to_async
+def create_public_room_chat_message(room, user, message):
+    return PublicRoomChatMessage.objects.create(user=user, room=room, content=message)
 
 @database_sync_to_async
 def connect_user(room, user):
