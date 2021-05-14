@@ -12,20 +12,20 @@ from chat.exceptions import ClientError
 class ChatConsumer(AsyncJsonWebsocketConsumer):
 
 
-	async def connect(self):
-		"""
-		Called when the websocket is handshaking as part of initial connection.
-		"""
-		print("ChatConsumer: connect: " + str(self.scope["user"]))
+    async def connect(self):
+        """
+        Called when the websocket is handshaking as part of initial connection.
+        """
+        print("ChatConsumer: connect: " + str(self.scope["user"]))
 
 		# let everyone connect. But limit read/write to authenticated users
-		await self.accept()
+        await self.accept()
 
 		# the room_id will define what it means to be "connected". If it is not None, then the user is connected.
-		self.room_id = None
+        self.room_id = None
 
 
-	async def receive_json(self, content):
+    async def receive_json(self, content):
 		"""
 		Called when we get a text frame. Channels will JSON-decode the payload
 		for us and pass it as the first argument.
@@ -57,13 +57,13 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 			pass
 
 
-	async def disconnect(self, code):
-		"""
-		Called when the WebSocket closes for any reason.
-		"""
+    async def disconnect(self, code):
+        """
+        Called when the WebSocket closes for any reason.
+        """
 		# Leave the room
-		print("ChatConsumer: disconnect")
-		pass
+        print("ChatConsumer: disconnect")
+        pass
 
 
 	async def join_room(self, room_id):
@@ -116,29 +116,40 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 		print("ChatConsumer: chat_message")
 
 
-	async def send_messages_payload(self, messages, new_page_number):
+    async def send_messages_payload(self, messages, new_page_number):
 		"""
 		Send a payload of messages to the ui
 		"""
 		print("ChatConsumer: send_messages_payload. ")
 
 
-	async def send_user_info_payload(self, user_info):
+    async def send_user_info_payload(self, user_info):
 		"""
 		Send a payload of user information to the ui
 		"""
 		print("ChatConsumer: send_user_info_payload. ")
 
-
- 	async def display_progress_bar(self, is_displayed):
-		"""
-		1. is_displayed = True
+    
+    async def display_progress_bar(self, is_displayed):
+        """
+        1. is_displayed = True
 			- Display the progress bar on UI
-		2. is_displayed = False
+        2. is_displayed = False
 			- Hide the progress bar on UI
-		"""
-		print("DISPLAY PROGRESS BAR: " + str(is_displayed))
+        """
+        print("DISPLAY PROGRESS BAR: " + str(is_displayed))
 
+    async def handle_client_error(self, e):
+        """
+        Called when a ClientError is raised.
+        Sends error data to UI.
+        """
+        errorData = {}
+        errorData['error'] = e.code
+        if e.message:
+			errorData['message'] = e.message
+			await self.send_json(errorData)
+        return
 
 @database_sync_to_async
 def get_room_or_error(room_id, user):
