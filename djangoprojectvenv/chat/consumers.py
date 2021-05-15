@@ -65,9 +65,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                     await self.send_user_info_payload(payload['user_info'])
                 else:
                     raise ClientError(204, "Something went wrong retrieving the other users account details.")	
-                
+                await self.display_progress_bar(False)
         except Exception as e:
-            pass
+            await self.display_progress_bar(False)
+            await self.handle_client_error(e)
 
 
     async def disconnect(self, code):
