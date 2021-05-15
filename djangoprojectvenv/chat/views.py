@@ -18,6 +18,10 @@ def private_chat_room_view(request, *args, **kwargs):
 		return redirect("login")
 
     context = {}
+    if room_id:
+        room = PrivateChatRoom.objects.get(pk=room_id)
+        context["room"] = room
+
     
     # 1. Find all the rooms this user is a part of 
     rooms1 = PrivateChatRoom.objects.filter(user1=user, is_active=True)
