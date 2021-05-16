@@ -2,7 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from notification.models import Notification
-# Create your models here.
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericRelation
 
 from chat.utils import find_or_create_private_chat
 
@@ -26,13 +27,24 @@ class FriendList(models.Model):
 			self.friends.add(account)
 			self.save()
 			
+			
+   			content_type = ContentType.objects.get_for_model(self)
+			self.notifications.create(
+				target=self.user,
+				from_user=account,
+				redirect_url=f"{settings.BASE_URL}/account/{account.pk}/",
+				verb=f"You are now friends with {account.username}.",
+				content_type=content_type,
+			)
+			self.save()
+   
+			# Create a private chat (or activate an old one)
 			chat = find_or_create_private_chat(self.user, account)
 			if not chat.is_active:
 				chat.is_active = True
 				chat.save()	
 			
-
-
+			
 	def remove_friend(self, account):
 		"""	
 		Remove a friend.
@@ -60,7 +72,27 @@ class FriendList(models.Model):
 		friends_list = FriendList.objects.get(user=removee)
 		friends_list.remove_friend(remover_friends_list.user)
 
-	@property
+		content_type = ContentType.objects.get_for_model(self)
+  
+		# Create notification for removee
+		friends_list.notifications.create(
+			target=removee,
+			rom_user=self.user,
+			redirect_url=f"{settings.BASE_URL}/account/{self.user.pk}/",
+			verb=f"You are no longer friends with {self.user.username}.",
+			content_type=content_type,
+		)
+
+		# Create notification for remover
+		self.notifications.create(
+			target=self.user,
+			from_user=removee,
+			redirect_url=f"{settings.BASE_URL}/account/{removee.pk}/",
+			verb=f"You are no longer friends with {removee.username}.",
+			content_type=content_type,
+		)
+ 	
+  	@property
 	def get_cname(self):
 		"""
 		For determining what kind of object is associated with a Notification
@@ -104,12 +136,33 @@ class FriendRequest(models.Model):
 		"""
 		receiver_friend_list = FriendList.objects.get(user=self.receiver)
 		if receiver_friend_list:
+			content_type = ContentType.objects.get_for_model(self)
+   			
+			# Update notification for RECEIVER
+			receiver_notification = Notification.objects.get(target=self.receiver, content_type=content_type, object_id=self.id)
+			receiver_notification.is_active = False
+			receiver_notification.redirect_url = f"{settings.BASE_URL}/account/{self.sender.pk}/"
+			receiver_notification.verb = f"You accepted {self.sender.username}'s friend request."
+			receiver_notification.timestamp = timezone.now()
+			receiver_notification.save()
+
 			receiver_friend_list.add_friend(self.sender)
-			sender_friend_list = FriendList.objects.get(user=self.sender)
+			
+   			sender_friend_list = FriendList.objects.get(user=self.sender)
 
 		if sender_friend_list:
-			sender_friend_list.add_friend(self.receiver)
-				# sender_friend_list.save()
+			
+			# Create notification for SENDER
+			self.notifications.create(
+					target=self.sender,
+					from_user=self.receiver,
+					redirect_url=f"{settings.BASE_URL}/account/{self.receiver.pk}/",
+					verb=f"{self.receiver.username} accepted your friend request.",
+					content_type=content_type,
+				)
+   
+   			sender_friend_list.add_friend(self.receiver)
+			# sender_friend_list.save()
 			self.is_active = False
 			self.save()
 			
@@ -137,3 +190,14 @@ class FriendRequest(models.Model):
 		For determining what kind of object is associated with a Notification
 		"""
 		return "FriendRequest"
+
+@receiver(post_save, sender=FriendRequest)
+def create_notification(sender, instance, created, **kwargs):
+	if created:
+		instance.notifications.create(
+			target=instance.receiver,
+			from_user=instance.sender,
+			redirect_url=f"{settings.BASE_URL}/account/{instance.sender.pk}/",
+			verb=f"{instance.sender.username} sent you a friend request.",
+			content_type=instance,
+		)
