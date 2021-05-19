@@ -63,8 +63,15 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 				if payload != None:
 					payload = json.loads(payload)
 					await self.send_new_general_notifications_payload(payload['notifications'])
-    
-		except ClientError as e:
+			elif command == "get_unread_general_notifications_count":
+				payload = await get_unread_general_notification_count(self.scope["user"])
+				if payload != None:
+					payload = json.loads(payload)
+					await self.send_unread_general_notification_count(payload['count'])
+			elif command == "mark_notifications_read":
+				await mark_notifications_read(self.scope["user"])
+  
+  		except ClientError as e:
 			print("EXCEPTION: receive_json: " + str(e))
 			pass
 	async def display_progress_bar(self, shouldDisplay):
@@ -123,7 +130,16 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 			},
 		)
 	
-		
+	async def send_unread_general_notification_count(self, count):
+		"""
+		Send the number of unread "general" notifications to the template
+		"""
+		await self.send_json(
+			{
+				"general_msg_type": GENERAL_MSG_TYPE_GET_UNREAD_NOTIFICATIONS_COUNT,
+				"count": count,
+			},
+		)
 @database_sync_to_async
 def get_general_notifications(user, page_number):
 	"""
@@ -238,3 +254,35 @@ def get_new_general_notifications(user, newest_timestamp):
 
 	return json.dumps(payload)
 
+@database_sync_to_async
+def get_unread_general_notification_count(user):
+	payload = {}
+	if user.is_authenticated:
+		friend_request_ct = ContentType.objects.get_for_model(FriendRequest)
+		friend_list_ct = ContentType.objects.get_for_model(FriendList)
+		notifications = Notification.objects.filter(target=user, content_type__in=[friend_request_ct, friend_list_ct])
+
+		unread_count = 0
+		if notifications:
+			for notification in notifications.all():
+				if not notification.read:
+					unread_count = unread_count + 1
+		payload['count'] = unread_count
+		return json.dumps(payload)
+	else:
+		raise ClientError("AUTH_ERROR", "User must be authenticated to get notifications.")
+	return None
+
+
+@database_sync_to_async
+def mark_notifications_read(user):
+	"""
+	marks a notification as "read"
+	"""
+	if user.is_authenticated:
+		notifications = Notification.objects.filter(target=user)
+		if notifications:
+			for notification in notifications.all():
+				notification.read = True
+				notification.save()
+	return
