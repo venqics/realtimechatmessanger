@@ -5,7 +5,9 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-
+from chat.constants import *
+from account.models import Account
+from chat.exceptions import ClientError
 class PrivateChatRoom(models.Model):
     """
     A private room for people to chat in.
@@ -15,7 +17,29 @@ class PrivateChatRoom(models.Model):
 
     is_active   = models.BooleanField(default=True)
 
-
+    # Users who are currently connected to the socket (Used to keep track of unread messages)
+    connected_users = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="connected_users")
+    
+    def connect_user(self, user):
+		"""
+		return true if user is added to the connected_users list
+		"""
+		is_user_added = False
+		if not user in self.connected_users.all():
+			self.connected_users.add(user)
+			is_user_added = True
+		return is_user_added 
+    
+    def disconnect_user(self, user):
+		"""
+		return true if user is removed from connected_users list
+		"""
+		is_user_removed = False
+		if user in self.connected_users.all():
+			self.connected_users.remove(user)
+			is_user_removed = True
+		return is_user_removed
+    
     @property
     def group_name(self):
         """
